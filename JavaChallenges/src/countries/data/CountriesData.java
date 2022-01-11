@@ -1,6 +1,4 @@
 package countries.data;
-
-import com.sun.tools.javac.Main;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -8,9 +6,15 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
 
 public class CountriesData {
+    /**
+     * Consume data from 'https://restcountries.com/v3.1/all' DIVIDE the countries by continents and return for each
+     * continent THE 10 COUNTRIES with LARGEST POPULATION that have MORE THAN ONE official language.
+     */
     private static Set<Continent> continents = new HashSet<>();
 
     public static void main(String[] args) {
@@ -23,19 +27,16 @@ public class CountriesData {
     }
 
     public static String calculateRestApiData(String responseBody){
-        JSONArray data = new JSONArray(responseBody);
-        StringBuilder stringBuilder = new StringBuilder();
+        JSONArray restApiData = new JSONArray(responseBody);
+        StringBuilder outputData = new StringBuilder();
 
-        for (int index = 0; index < data.length(); index++) {
-            JSONObject jsonObject = data.getJSONObject(index);
+        for (int index = 0; index < restApiData.length(); index++) {
+            JSONObject jsonObject = restApiData.getJSONObject(index);
             try {
                 if(jsonObject.getJSONObject("languages").length() > 1){
                     String continentName = checkContinent(jsonObject);
                     Continent currentContinent = getContinent(continentName);
-
-                    String countryName = jsonObject.getJSONObject("name").getString("official");
-                    int population = jsonObject.getInt("population");
-                    Country country = new Country(countryName, population);
+                    Country country = addCounty(jsonObject);
 
                     if (currentContinent != null) {
                         currentContinent.getCountries().add(country);
@@ -47,17 +48,25 @@ public class CountriesData {
         }
 
         for (Continent continent : continents) {
-            stringBuilder.append("Continent: ").append(continent.getName()).append(System.getProperty("line.separator"));
+            outputData.append("Continent: ").append(continent.getName()).append(System.getProperty("line.separator"));
+
              continent.getCountries()
                     .stream()
                      .sorted(Comparator.comparing(Country::getPopulation).thenComparing(Country::getPopulation).reversed())
+                     .limit(10)
                     .forEach(country -> {
-                        stringBuilder.append("   "+ country.getName()).append(System.getProperty("line.separator"));
-                        stringBuilder.append("   "+ country.getPopulation()).append(System.getProperty("line.separator"));
+                        outputData.append("   ").append(country.getName()).append(System.getProperty("line.separator"));
+                        outputData.append("   ").append(country.getPopulation()).append(System.getProperty("line.separator"));
                     });
         }
-        System.out.println(stringBuilder);
-        return stringBuilder.toString();
+        System.out.println(outputData);
+        return outputData.toString();
+    }
+
+    private static Country addCounty(JSONObject jsonObject) {
+        String countryName = jsonObject.getJSONObject("name").getString("official");
+        int population = jsonObject.getInt("population");
+        return new Country(countryName, population);
     }
 
     private static Continent getContinent(String continentName) {
