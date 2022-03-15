@@ -1,0 +1,127 @@
+Method reference:  method reference is the shorthand syntax for a lambda expression that contains just one method call.
+Syntax - Object :: methodName - employeeRepository::findById
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+A stream does not store data and, in that sense, is not a data structure. It also never modifies the underlying data source.
+Stream methods:
+
+ * Obtain a stream from an existing array, Strings:
+ : Stream.of(arr),  Stream.of(str)
+ 
+ * Obtain a stream from an existing list:
+ : empList.stream();
+ 
+ * forEach() - is simplest and most common operation; it loops over the stream elements
+   : empList.stream().forEach(e -> e.salaryIncrement(10.0));
+ 
+ * map() - produces a NEW stream after applying a function to each element of the original stream. The new stream could be of different type.
+   :   List<Employee> employeesById = Stream.of(empIds)
+       .map(employeeRepository::findById)
+	   .collect(Collectors.toList());
+	   
+ * collect() - get stuffs out of the stream. (repackaging elements to some data structures and applying to other)
+  The strategy for this operation is provided via the * Collector interface
+  : toList()) , Collectors.joining(", ")) https://docs.oracle.com/javase/8/docs/api/java/util/stream/Collectors.html
+  
+  * filter() - this produces a new stream that contains elements of the original stream that pass a given test (specified by a Predicate).
+  : filter(e -> e.getSalary() > 200000)
+ 
+ * findFirst() - returns an Optional
+   : .findFirst()
+     orElse(null);
+	 
+ * flatMap() - A stream can hold complex data structures like Stream<List<String>>. In cases like this, flatMap()
+   helps us to flatten the data structure to simplify further operations:
+   : words.stream()
+     .flatMap(word -> Stream.of(word.charAt(2))).
+	 
+ * peek() - Returns a stream consisting of the elements of this stream, additionally performing the provided action on each
+   element as elements are consumed from the resulting stream.
+   : .peek(e -> e.salaryIncrement(10.0))
+   
+ * count() , skip(), limit() short-circuiting operations. Lazy operations. Execute only when previuos task is finisj
+ 
+ * min() and max() return the minimum and maximum element in the stream respectively, based on a COMPARATOR. They return an Optional
+   : min((e1, e2) -> e1.getId() - e2.getId())  .max(Comparator.comparing(Employee::getSalary))
+    orElseThrow(NoSuchElementException::new);  .orElseThrow(NoSuchElementException::new);
+
+ * distinct() - Eleminates dublicate values
+ 
+ * allMatch(), anyMatch(), and noneMatch() - These operations all take a predicate and return a boolean.
+   Processing is stopped as soon as the answer is determined
+   : intList.stream()                |     intList.stream()
+     .anyMatch(i -> i % 2 == 0);     |     .allMatch(i -> i % 2 == 0);
+
+ * Creating IntStream - The most common way of creating an IntStream is to call mapToInt()/mapToDouble()
+   on an existing stream or Stream.of(1, 2 ...)
+   : empList.stream()
+      .mapToInt(Employee::getId)
+      .max()
+      .orElseThrow(NoSuchElementException::new);
+	
+	Int Stream provide additional operations like - sum(), average(), range() etc
+	:  .mapToDouble(Employee::getSalary)
+      .average()
+      .orElseThrow(NoSuchElementException::new);
+	  
+ * reduce() -  A reduction operation (also called as fold) takes a sequence of input elements and combines them
+   into a single summary result by repeated application of a combining operation.
+   
+     T reduce(T identity, BinaryOperator<T> accumulator)
+     'identity' is a starting value , 'accumulator' is the binary operation we repeated apply.
+
+	: stream()                                             |   stream()
+    .reduce(0, (subtotal, element) -> subtotal + element); |   .reduce(0, Integer::sum)
+	
+ * Advance collect !
+   - joining() - insert the delimiter between the two String 
+   : .collect(Collectors.joining(", "))
+     .toString();
+	 
+   - summarizingDouble() - applies a double-producing mapping function to each input element and 
+     returns a SPECIAL class ( DoubleSummaryStatistics ) containing statistical information for the resulting values:
+   : DoubleSummaryStatistics stats = empList.stream()
+      .collect(Collectors.summarizingDouble(Employee::getSalary));  
+	  We can analyse all stats - stats.getCount(), stats.getAverage(), stats.getMax(), ect...
+ 
+ ### Stream Java 9 improvements
+ 
+ * takeWhile() method is one of the new additions to the Streams API. It does what its name implies:
+   it takes (elements from a stream) while a given condition is true. The difference between filter and takeWhile is filter() return
+   all elements that mach the condition but takeWhile() stops evaluating as soon as it finds the first occurrence (like distinct)
+   : .takeWhile(x -> x <= 5)
+     .forEach(System.out::println);
+	 
+ * ofNullable() - powerful way not only to avoid the dreaded null pointer exception.
+  : Integer number = null;
+    Stream<Integer> result = Stream.ofNullable(number);
+    result.map(x -> x * x).forEach(System.out::println);
+	 	     
+  
+ * Sorted() - sorts the stream elements based on the comparator passed we pass into it.
+   :.sorted((e1, e2) -> e1.getName().compareTo(e2.getName()))
+   :list.sort((o1, o2) -> o1.getItem().getValue().compareTo(o2.getItem().getValue()));
+   Comparator
+   list.sort(Comparator.comparing(o -> o.getItem().getValue()));
+
+ 
+ 
+ 
+ Examples using Map
+      // Group employees by department
+     Map<Department, List<Employee>> byDept
+         = employees.stream()
+                    .collect(Collectors.groupingBy(Employee::getDepartment));
+
+     // Compute sum of salaries by department
+     Map<Department, Integer> totalByDept
+         = employees.stream()
+                    .collect(Collectors.groupingBy(Employee::getDepartment,
+                                                   Collectors.summingInt(Employee::getSalary)));
+
+     // Partition students into passing and failing
+     Map<Boolean, List<Student>> passingFailing =
+         students.stream()
+                 .collect(Collectors.partitioningBy(s -> s.getGrade() >= PASS_THRESHOLD));
+ 
+ 
